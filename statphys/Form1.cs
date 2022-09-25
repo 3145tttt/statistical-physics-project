@@ -11,7 +11,7 @@ namespace statphys
         List<double> delta_arr = new List<double> { };
         Random rnd;
         const bool DEBUG = true;
-        double mean = 0, var = 10;
+        double mean = 0, var = 1;
 
         public Form1()
         {
