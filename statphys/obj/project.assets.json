@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\3145t\\source\\repos\\statphys\\statphys\\statphys.csproj",
+      "projectUniqueName": "C:\\Users\\3145t\\source\\repos\\statphys_test\\statphys\\statphys.csproj",
       "projectName": "statphys",
-      "projectPath": "C:\\Users\\3145t\\source\\repos\\statphys\\statphys\\statphys.csproj",
+      "projectPath": "C:\\Users\\3145t\\source\\repos\\statphys_test\\statphys\\statphys.csproj",
       "packagesPath": "C:\\Users\\3145t\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\3145t\\source\\repos\\statphys\\statphys\\obj\\",
+      "outputPath": "C:\\Users\\3145t\\Source\\Repos\\statphys_test\\statphys\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\3145t\\AppData\\Roaming\\NuGet\\NuGet.Config",
