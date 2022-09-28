@@ -32,3 +32,6 @@ C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\refi
 C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\statphys.pdb
 C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\statphys.genruntimeconfig.cache
 C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\ref\statphys.dll
+C:\Users\3145t\source\repos\statphys_test\statphys\bin\Debug\net6.0-windows\ScottPlot.dll
+C:\Users\3145t\source\repos\statphys_test\statphys\bin\Debug\net6.0-windows\ScottPlot.WinForms.dll
+C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\statphys.csproj.CopyComplete

@@ -1,8 +1,15 @@
 {
   "version": 2,
-  "dgSpecHash": "k11+uroX45h2jE8DQoS3LNcR2Ymbe7AzBGlM2e1d2e8CcPabdIbflnkOipMxibp/pxOE8L5YdcBrWH1cCFplmg==",
+  "dgSpecHash": "wcwfRV79Z7T0AyrTczp+F63ouVz117OyEE0r5WQQelXcuVsIhMhAgUQKlGcsVsdQiZvauFhhBKNO8ZbyizHmFQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\3145t\\source\\repos\\statphys_test\\statphys\\statphys.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\3145t\\.nuget\\packages\\microsoft.netcore.platforms\\3.0.0\\microsoft.netcore.platforms.3.0.0.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\microsoft.win32.systemevents\\4.6.0\\microsoft.win32.systemevents.4.6.0.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\scottplot\\4.1.58\\scottplot.4.1.58.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\scottplot.winforms\\4.1.58\\scottplot.winforms.4.1.58.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\system.drawing.common\\4.6.1\\system.drawing.common.4.6.1.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512"
+  ],
   "logs": []
 }

@@ -57,7 +57,7 @@ namespace statphys
 
         public void get_mean_var(ref double mean, ref double var, List<double> arr)
         {
-            if (arr.Count() == 0)
+            if (!arr.Any())
             {
                 mean = 0;
                 var = 0;
@@ -71,6 +71,36 @@ namespace statphys
         double get_var(List<double> arr, double mean)
         {
             return arr.Sum(x => (x - mean) * (x - mean)) / arr.Count();
+        }
+
+        public Dictionary<double, double> get_prob(List<double> arr)
+        {
+            const int N = 1;
+
+            double[] t = arr.Select(x => Math.Round(x, N)).ToArray();
+            Dictionary<double, double> prob = new();
+            foreach (double x in t)
+            {
+                if (prob.ContainsKey(x))
+                {
+                    ++prob[x];
+                }
+                else
+                {
+                    prob[x] = 1;
+                }
+            }
+            foreach (KeyValuePair<double, double> x in prob)
+            {
+                prob[x.Key] = x.Value / t.Length;
+            }
+
+            return prob;
+        }
+
+        public double get_entropy(Dictionary<double, double> prob)
+        {
+            return -prob.Sum(x => (x.Value) * Math.Log(x.Value));
         }
     }
 }

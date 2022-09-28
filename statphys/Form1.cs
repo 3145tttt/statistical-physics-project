@@ -1,6 +1,11 @@
+using ScottPlot;
+using ScottPlot.Drawing.Colormaps;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Numerics;
+using System.Windows.Forms.VisualStyles;
+using static ScottPlot.Plottable.PopulationPlot;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace statphys
@@ -9,12 +14,15 @@ namespace statphys
     {
         List<double> points_x = new() { 0 };
         List<double> delta_arr = new() { };
-        const bool DEBUG = true;
+        const bool DEBUG = false;
         double mean = 0, var = 1;
 
         RandomGenerator? gen;
         readonly NumericMethods calc = new();
         readonly TestingSystem test = new();
+        List<double> mean_list = new();
+        List<double> var_list = new();
+        List<double> entropy_list = new();
 
         public Form1()
         {
@@ -26,6 +34,11 @@ namespace statphys
             //init debug logger
             Trace.Listeners.Add(new TextWriterTraceListener("debugOut.log"));
             Trace.AutoFlush = true;
+
+            formsPlot1.Plot.Title("Среднее");
+            formsPlot2.Plot.Title("Дисперсия");
+            formsPlot3.Plot.Title("Энтропия");
+
         }
 
         // Start timer
@@ -67,7 +80,14 @@ namespace statphys
         {
             get_new_sample();
             pictureBox1.Refresh();
+            add_mean_var();
+            add_entropy();
             update_mean_var_labels();
+            update_plot();
+            if(delta_arr.Count() % 10 == 0)
+            {
+                plot_dist();
+            }
         }
 
         void get_new_sample()
@@ -91,14 +111,85 @@ namespace statphys
             label1.Refresh();
         }
 
-        void update_mean_var_labels()
+        void update_plot()
+        {
+            double[] X = Enumerable.Range(1, mean_list.Count()).Select(x => (double)x).ToArray();
+            clear_plot();
+
+            formsPlot1.Plot.AddScatter(X, mean_list.ToArray());
+            formsPlot2.Plot.AddScatter(X, var_list.ToArray());
+            formsPlot3.Plot.AddScatter(X, entropy_list.ToArray());
+
+            refresh_plot();
+        }
+
+        void clear_plot()
+        {
+            formsPlot1.Plot.Clear();
+            formsPlot2.Plot.Clear();
+            formsPlot3.Plot.Clear();
+        }
+
+        void refresh_plot()
+        {
+            formsPlot1.Refresh();
+            formsPlot2.Refresh();
+            formsPlot3.Refresh();
+        }
+
+        void add_mean_var()
         {
             double mean = 0, var = 0;
             calc.get_mean_var(ref mean, ref var, delta_arr);
+            mean_list.Add(mean);
+            var_list.Add(var);
+        }
 
+        void add_entropy()
+        {
+            Dictionary<double, double> prob = calc.get_prob(delta_arr);
+            entropy_list.Add(calc.get_entropy(prob));
+
+            double[] pos = prob.Keys.ToArray();
+            double[] y = prob.Values.ToArray();
+            var plt = new Plot(600, 400);
+
+        }
+        
+        void plot_dist()
+        {
+            if (delta_arr.Count() <= 1)
+            {
+                return;
+            }
+            const double k = 0.8;
+            double sigma = Math.Sqrt(var);
+            double len = 10 * sigma;
+            double binSize = len / 30.0;
+            (double[] counts, double[] binEdges) = 
+            ScottPlot.Statistics.Common.Histogram(
+                delta_arr.ToArray(),
+                min: mean - 5 * sigma,
+                max: mean + 5 * sigma,
+                binSize: binSize,
+                density: true
+                );
+            double[] leftEdges = binEdges.Take(binEdges.Length - 1).ToArray();
+
+            var plt = new Plot(600, 400);
+            var bar = plt.AddBar(values: counts, positions: leftEdges);
+            bar.BarWidth = binSize*k;
+            
+            formsPlot4.Plot.Clear();
+            formsPlot4.Plot.Add(bar);
+            formsPlot4.Refresh();
+        }
+
+        void update_mean_var_labels(double mean = 0, double var = 0)
+        {            
             label_mean.Text = $"Mean = {mean}";
             label_var.Text = $"Variance = {var}";
-            label_count.Text = $"Count = {delta_arr.Count()}";
+            label_count.Text = $"Count = {mean_list.Count()}";
 
             label_var.Refresh();
             label_mean.Refresh();
@@ -138,6 +229,7 @@ namespace statphys
         {
             test.test_integrator();
             test.test_root();
+            update_plot();
         }
 
         // Test N sampling from distrubition;
@@ -159,11 +251,19 @@ namespace statphys
             timer1.Stop();
             points_x = new List<double> { 0 };
             delta_arr = new List<double> { };
+            entropy_list = new List<double> { };
+            mean_list = new(); 
+            var_list = new();
 
             gen = new RandomGenerator(x => normal_dist(x, mean, Math.Sqrt(var)));
             update_label(0, 0);
             pictureBox1.Refresh();
             update_mean_var_labels();
+            clear_plot();
+            refresh_plot();
+
+            formsPlot4.Plot.Clear();
+            formsPlot4.Refresh();
         }
 
         // Set property NumercicUpDown mean var

@@ -43,6 +43,10 @@
             this.numericUpDownMean = new System.Windows.Forms.NumericUpDown();
             this.numericUpDownVar = new System.Windows.Forms.NumericUpDown();
             this.label_count = new System.Windows.Forms.Label();
+            this.formsPlot1 = new ScottPlot.FormsPlot();
+            this.formsPlot2 = new ScottPlot.FormsPlot();
+            this.formsPlot3 = new ScottPlot.FormsPlot();
+            this.formsPlot4 = new ScottPlot.FormsPlot();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMean)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownVar)).BeginInit();
@@ -50,7 +54,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(318, 242);
+            this.button1.Location = new System.Drawing.Point(225, 242);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(180, 38);
             this.button1.TabIndex = 0;
@@ -62,7 +66,7 @@
             // 
             this.pictureBox1.Location = new System.Drawing.Point(12, 25);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(776, 165);
+            this.pictureBox1.Size = new System.Drawing.Size(597, 165);
             this.pictureBox1.TabIndex = 1;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Paint += new System.Windows.Forms.PaintEventHandler(this.pictureBox1_Paint);
@@ -75,7 +79,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(363, 224);
+            this.label1.Location = new System.Drawing.Point(271, 224);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(82, 15);
             this.label1.TabIndex = 2;
@@ -83,7 +87,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(650, 242);
+            this.button2.Location = new System.Drawing.Point(411, 242);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(91, 38);
             this.button2.TabIndex = 3;
@@ -93,7 +97,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(650, 302);
+            this.button3.Location = new System.Drawing.Point(411, 302);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(91, 36);
             this.button3.TabIndex = 4;
@@ -103,7 +107,7 @@
             // 
             // button4
             // 
-            this.button4.Location = new System.Drawing.Point(363, 302);
+            this.button4.Location = new System.Drawing.Point(278, 286);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(75, 23);
             this.button4.TabIndex = 5;
@@ -113,7 +117,7 @@
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(363, 380);
+            this.button5.Location = new System.Drawing.Point(278, 344);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(75, 23);
             this.button5.TabIndex = 6;
@@ -141,7 +145,7 @@
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(363, 341);
+            this.button6.Location = new System.Drawing.Point(278, 315);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(75, 23);
             this.button6.TabIndex = 9;
@@ -186,11 +190,47 @@
             this.label_count.TabIndex = 12;
             this.label_count.Text = "Count = 0";
             // 
+            // formsPlot1
+            // 
+            this.formsPlot1.Location = new System.Drawing.Point(697, 12);
+            this.formsPlot1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.formsPlot1.Name = "formsPlot1";
+            this.formsPlot1.Size = new System.Drawing.Size(659, 178);
+            this.formsPlot1.TabIndex = 13;
+            // 
+            // formsPlot2
+            // 
+            this.formsPlot2.Location = new System.Drawing.Point(697, 196);
+            this.formsPlot2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.formsPlot2.Name = "formsPlot2";
+            this.formsPlot2.Size = new System.Drawing.Size(659, 191);
+            this.formsPlot2.TabIndex = 14;
+            // 
+            // formsPlot3
+            // 
+            this.formsPlot3.Location = new System.Drawing.Point(697, 393);
+            this.formsPlot3.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.formsPlot3.Name = "formsPlot3";
+            this.formsPlot3.Size = new System.Drawing.Size(659, 182);
+            this.formsPlot3.TabIndex = 15;
+            // 
+            // formsPlot4
+            // 
+            this.formsPlot4.Location = new System.Drawing.Point(222, 393);
+            this.formsPlot4.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.formsPlot4.Name = "formsPlot4";
+            this.formsPlot4.Size = new System.Drawing.Size(467, 182);
+            this.formsPlot4.TabIndex = 16;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(1369, 639);
+            this.Controls.Add(this.formsPlot4);
+            this.Controls.Add(this.formsPlot3);
+            this.Controls.Add(this.formsPlot2);
+            this.Controls.Add(this.formsPlot1);
             this.Controls.Add(this.label_count);
             this.Controls.Add(this.numericUpDownVar);
             this.Controls.Add(this.numericUpDownMean);
@@ -230,5 +270,9 @@
         private NumericUpDown numericUpDownMean;
         private NumericUpDown numericUpDownVar;
         private Label label_count;
+        private ScottPlot.FormsPlot formsPlot1;
+        private ScottPlot.FormsPlot formsPlot2;
+        private ScottPlot.FormsPlot formsPlot3;
+        private ScottPlot.FormsPlot formsPlot4;
     }
 }
