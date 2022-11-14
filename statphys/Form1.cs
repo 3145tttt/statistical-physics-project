@@ -1,5 +1,7 @@
 using ScottPlot;
 using ScottPlot.Drawing.Colormaps;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
@@ -15,7 +17,7 @@ namespace statphys
         List<double> points_x = new() { 0 };
         List<double> delta_arr = new() { };
         const bool DEBUG = false;
-        double mean = 0, var = 1;
+        double par1 = 40, par2 = 30;
 
         RandomGenerator? gen;
         readonly NumericMethods calc = new();
@@ -24,11 +26,37 @@ namespace statphys
         List<double> var_list = new();
         List<double> entropy_list = new();
 
+        int prev_height;
+
+
+        string cur_dist = "norm";
+
+        Dictionary<string, Dictionary<string, double>> dist_params = new();
+        Dictionary<string, Dictionary<string, string>> dist_params_names = new();
+
         public Form1()
         {
+
             InitializeComponent();
 
+            prev_height = this.Size.Height;
+            /*FormBorderStyle = FormBorderStyle.None;
+            WindowState = FormWindowState.Maximized;*/
+
+            init_dict();
             set_NumericUpDown();
+
+            List<string> dist_list = new ();
+            dist_list.Add("Нормальное");
+            dist_list.Add("Экспоненциальное");
+            dist_list.Add("Гамма");
+            dist_list.Add("Парето");
+            dist_list.Add("Пуассона");
+            dist_list.Add("Бернулли");
+            comboBox1.DataSource = dist_list;
+            comboBox1.SelectedIndex = 0;
+            timer1.Interval = 500;
+            this.freqUpDown.Value = 500;
             reset();
 
             //init debug logger
@@ -66,14 +94,20 @@ namespace statphys
 
         private void numericUpDownMean_ValueChanged(object sender, EventArgs e)
         {
+            par1 = (double)numericUpDownMean.Value;
             reset();
-            mean = (double)numericUpDownMean.Value;
         }
 
         private void numericUpDownVar_ValueChanged(object sender, EventArgs e)
         {
+            par2 = (double)numericUpDownVar.Value;
             reset();
-            var = (double)numericUpDownVar.Value;
+        }
+
+        private void freqUpDownValueChanged(object sender, EventArgs e)
+        {
+            timer1.Interval = (int) freqUpDown.Value;
+            reset();
         }
 
         void get_new_iteration()
@@ -82,18 +116,30 @@ namespace statphys
             pictureBox1.Refresh();
             add_mean_var();
             add_entropy();
-            update_mean_var_labels();
-            update_plot();
-            if(delta_arr.Count() % 10 == 0)
+            update_mean_var_labels(mean_list.Last(), var_list.Last());
+            if (delta_arr.Count() > 3)
             {
-                plot_dist();
+                update_plot();
+                if (delta_arr.Count() % 10 == 0)
+                {
+                    plot_dist();
+                }
+            }
+            int lim = 10000;
+            int C = 5000;
+            if(delta_arr.Count() > lim)
+            {
+                delta_arr.RemoveRange(0, C);
+                points_x.RemoveRange(0, C);
+                mean_list.RemoveRange(0, C);
+                var_list.RemoveRange(0, C);
+                entropy_list.RemoveRange(0, C);
             }
         }
 
         void get_new_sample()
         {
-            double sigma = Math.Sqrt(var);
-            double delta = gen!.sample_delta(-10*sigma, 10*sigma);
+            double delta = gen!.sample_delta();
             double cur_x = points_x.Last() + delta;
             points_x.Add(cur_x);
             delta_arr.Add(delta);
@@ -107,18 +153,26 @@ namespace statphys
 
         void update_label(double x, double delta)
         {
-            label1.Text = $"x = {x} delta = {delta}";
+            
+            label1.Text = $"x = {String.Format("{0:N4}", x)} delta = {String.Format("{0:N4}", delta)}";
             label1.Refresh();
         }
 
         void update_plot()
         {
-            double[] X = Enumerable.Range(1, mean_list.Count()).Select(x => (double)x).ToArray();
+            Debug.Print($"{mean_list.Count()}");
+            int k = 3;
+            if (delta_arr.Count() < k)
+            {
+                return;
+            }
+            Debug.Print($"{mean_list.Count()}");
+            double[] X = Enumerable.Range(1, mean_list.Count()).Select(x => (double)x).Skip(k).ToArray();
             clear_plot();
-
-            formsPlot1.Plot.AddScatter(X, mean_list.ToArray());
-            formsPlot2.Plot.AddScatter(X, var_list.ToArray());
-            formsPlot3.Plot.AddScatter(X, entropy_list.ToArray());
+            
+            formsPlot1.Plot.AddScatter(X, mean_list.Skip(k).ToArray());
+            formsPlot2.Plot.AddScatter(X, var_list.Skip(k).ToArray());
+            formsPlot3.Plot.AddScatter(X, entropy_list.Skip(k).ToArray());
 
             refresh_plot();
         }
@@ -132,6 +186,7 @@ namespace statphys
 
         void refresh_plot()
         {
+
             formsPlot1.Refresh();
             formsPlot2.Refresh();
             formsPlot3.Refresh();
@@ -147,13 +202,7 @@ namespace statphys
 
         void add_entropy()
         {
-            Dictionary<double, double> prob = calc.get_prob(delta_arr);
-            entropy_list.Add(calc.get_entropy(prob));
-
-            double[] pos = prob.Keys.ToArray();
-            double[] y = prob.Values.ToArray();
-            var plt = new Plot(600, 400);
-
+            entropy_list.Add(calc.get_entropy(delta_arr));
         }
         
         void plot_dist()
@@ -163,7 +212,8 @@ namespace statphys
                 return;
             }
             const double k = 0.8;
-            double sigma = Math.Sqrt(var);
+            double mean = gen!.get_moment1();
+            double sigma = Math.Sqrt(gen!.get_moment2());
             double len = 10 * sigma;
             double binSize = len / 30.0;
             (double[] counts, double[] binEdges) = 
@@ -187,58 +237,119 @@ namespace statphys
 
         void update_mean_var_labels(double mean = 0, double var = 0)
         {            
-            label_mean.Text = $"Mean = {mean}";
-            label_var.Text = $"Variance = {var}";
-            label_count.Text = $"Count = {mean_list.Count()}";
+            label_mean.Text = $"Среднее = {String.Format("{0:N4}", mean)}";
+            label_var.Text = $"Дисперсия = {String.Format("{0:N4}", var)}";
+            label_count.Text = $"Количество точек = {mean_list.Count()}";
 
             label_var.Refresh();
             label_mean.Refresh();
             label_count.Refresh();
         }
 
-        double normal_dist(double x, double m, double std)
-        {
-            double exponent = (x - m) * (x - m) / (std * std);
-            return 1.0 / (std * Math.Sqrt(2 * Math.PI)) * Math.Exp(-exponent / 2.0);
-        }
-
         // Paint line and points
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
             // Line
-            int HIEGHT_2 = pictureBox1.Size.Height / 2, WIDTH_2 = pictureBox1.Size.Width / 2;
+            int HIEGHT_3 = pictureBox1.Size.Height / 3, WIDTH_2 = pictureBox1.Size.Width / 2;
+            int HIEGHT_2 = pictureBox1.Size.Height / 2;
+            int HIEGHT_6 = pictureBox1.Size.Height / 6;
+            int LINE_UP = HIEGHT_2 - HIEGHT_3;
+            int LINE_DOWN = HIEGHT_2 + HIEGHT_3;
+            int R = (LINE_DOWN - LINE_UP) / 2;
+            int C = (LINE_DOWN + LINE_UP) / 2;
+            int offset = R + 20;
+
             int POINT_HIEGHT = 10, POINT_WIDTH = 10;
             e.Graphics.DrawLine(
-                new Pen(Color.Red, 2f),
-                new Point(0, HIEGHT_2),
-                new Point(pictureBox1.Size.Width, HIEGHT_2));
+                new Pen(Color.Red, 3f),
+                new Point(offset, LINE_UP),
+                new Point(pictureBox1.Size.Width - offset + 1, LINE_UP)
+            );
+
+            e.Graphics.DrawLine(
+                new Pen(Color.Red, 3f),
+                new Point(offset, LINE_DOWN),
+                new Point(pictureBox1.Size.Width - offset + 1, LINE_DOWN)
+            );
+
+            e.Graphics.DrawArc(
+                new Pen(Color.Red, 3f),
+                pictureBox1.Size.Width - offset - R,
+                C - R,
+                2 * R,
+                2 * R,
+                270,
+                180
+            );
+
+            e.Graphics.DrawArc(
+                new Pen(Color.Red, 3f),
+                offset - R,
+                C - R,
+                2*R,
+                2*R,
+                90,
+                180
+            );
 
             // Points
             SolidBrush commonBrush = new SolidBrush(Color.Orange);
             SolidBrush lastBrush = new SolidBrush(Color.Blue);
+
+            double LINE_WIDTH = pictureBox1.Size.Width - 2*offset;
+            double ARC_WIDTH = Math.PI * R / 2;
             for (int i = 0; i < points_x.Count; ++i)
             {
                 int x = Convert.ToInt32(points_x[i]);
                 SolidBrush brush = i == points_x.Count - 1 ? lastBrush : commonBrush;
-                e.Graphics.FillEllipse(brush, WIDTH_2 + x, HIEGHT_2 - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                if(x > 2 * LINE_WIDTH + 2 * ARC_WIDTH || x < 0)
+                {
+                    x %= (int)(2 * (LINE_WIDTH + ARC_WIDTH));
+                }
+                if(x < 0)
+                {
+                    x += (int)(2 * (LINE_WIDTH + ARC_WIDTH));
+                }
+                if(x >= 0 && x <= LINE_WIDTH)
+                {
+                    e.Graphics.FillEllipse(brush, offset + x, LINE_UP - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                }
+
+                if (x > LINE_WIDTH && x < LINE_WIDTH  + ARC_WIDTH)
+                {
+                    double t = x - LINE_WIDTH;
+                    double angle = t * Math.PI / ARC_WIDTH;
+                    double t_x = R * Math.Cos(angle - Math.PI / 2);
+                    double t_y = R * Math.Sin(angle - Math.PI / 2);
+                    double c_x = LINE_WIDTH + offset;
+                    double c_y = C;
+
+                    int p_x = (int)(c_x + t_x);
+                    int p_y = (int)(c_y + t_y);
+
+                    e.Graphics.FillEllipse(brush, p_x - 4, p_y - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                }
+                if (x >= LINE_WIDTH + ARC_WIDTH && x <= 2*LINE_WIDTH + ARC_WIDTH)
+                {
+                    double t = pictureBox1.Size.Width - offset - (x - LINE_WIDTH - ARC_WIDTH);
+                    e.Graphics.FillEllipse(brush, (int) t, LINE_DOWN - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                }
+                if (x > 2 * LINE_WIDTH + ARC_WIDTH && x <= 2 * (LINE_WIDTH + ARC_WIDTH))
+                {
+                    double t = x - 2 * LINE_WIDTH - ARC_WIDTH;
+                    double angle = t * Math.PI / ARC_WIDTH;
+                    double t_x = R * Math.Cos(angle - 3*Math.PI / 2);
+                    double t_y = R * Math.Sin(angle - 3*Math.PI / 2);
+                    double c_x = offset;
+                    double c_y = C;
+
+                    int p_x = (int)(c_x + t_x);
+                    int p_y = (int)(c_y + t_y);
+                    e.Graphics.FillEllipse(brush, p_x - 4, p_y - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                }
             }
         }
 
-        // Test numeric methods
-        private void button_numeric_methods_Click(object sender, EventArgs e)
-        {
-            test.test_integrator();
-            test.test_root();
-            update_plot();
-        }
-
-        // Test N sampling from distrubition;
-        // out => statphys\statphys\bin\Debug\net6.0-windows\debugOut.log
-        private void button3_Click(object sender, EventArgs e)
-        {
-            double sigma = Math.Sqrt(var);
-            test.test_sampling(-10 * sigma, 10 * sigma, x => normal_dist(x, mean, sigma));
-        }
 
         // Reset programm
         private void button_reset_Click(object sender, EventArgs e)
@@ -255,7 +366,9 @@ namespace statphys
             mean_list = new(); 
             var_list = new();
 
-            gen = new RandomGenerator(x => normal_dist(x, mean, Math.Sqrt(var)));
+            
+            gen = new RandomGenerator(cur_dist, par1, par2);
+
             update_label(0, 0);
             pictureBox1.Refresh();
             update_mean_var_labels();
@@ -266,20 +379,185 @@ namespace statphys
             formsPlot4.Refresh();
         }
 
+
+
         // Set property NumercicUpDown mean var
         void set_NumericUpDown()
         {
-            this.numericUpDownMean.Maximum = 100;
-            this.numericUpDownMean.Minimum = -100;
-            this.numericUpDownMean.ThousandsSeparator = true;
-            this.numericUpDownMean.DecimalPlaces = 1;
-            this.numericUpDownMean.Increment = new decimal(0.1);
 
-            this.numericUpDownVar.Maximum = 400;
-            this.numericUpDownVar.Minimum = 1;
-            this.numericUpDownVar.ThousandsSeparator = true;
-            this.numericUpDownVar.DecimalPlaces = 1;
-            this.numericUpDownVar.Increment = new decimal(0.1);
+            Dictionary<string, double> dist = dist_params[cur_dist];
+            Dictionary<string, string> dist_name = dist_params_names[cur_dist];
+
+            ParametrLabel1.Text = dist_name["par1"];
+            numericUpDownMean.Maximum = (decimal)dist["max_par1"];
+            numericUpDownMean.Minimum = (decimal)dist["min_par1"];
+            numericUpDownMean.ThousandsSeparator = true;
+            numericUpDownMean.DecimalPlaces = 1;
+            numericUpDownMean.Increment = (decimal)dist["step_par1"];
+            numericUpDownMean.Value = (decimal)dist["par1"];
+
+            if (dist["count"] == 2)
+            {
+                ParametrLabel2.Text = dist_name["par2"];
+                numericUpDownVar.Maximum = (decimal)dist["max_par2"];
+                numericUpDownVar.Minimum = (decimal)dist["min_par2"];
+                numericUpDownVar.ThousandsSeparator = true;
+                numericUpDownVar.DecimalPlaces = 1;
+                numericUpDownVar.Increment = (decimal)dist["step_par2"];
+                numericUpDownVar.Value = (decimal)dist["par2"];
+            }
+            ParametrLabel2.Visible = dist["count"] == 2;
+            numericUpDownVar.Visible = dist["count"] == 2;
+
+            freqUpDown.Maximum = 10000;
+            freqUpDown.Minimum = 1;
+            freqUpDown.ThousandsSeparator = true;
+            freqUpDown.Increment = 1;
+            freqUpDown.Value = 500;
+
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int id = comboBox1.SelectedIndex;
+            List<string> hash_name = new() { "norm", "exp", "gamma", "pareto", "puass", "bernoulli" };
+            cur_dist = hash_name[id];
+            set_NumericUpDown();
+            reset();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            pictureBox1.Refresh();
+            int curHeigh = this.Size.Height;
+
+            formsPlot1.Height *= curHeigh / prev_height;
+        }
+
+        void init_dict()
+        {
+            //norm
+            Dictionary<string, double> dist = new();
+            Dictionary<string, string> dist_name = new();
+            dist["count"] = 2;
+            dist["min_par1"] = -1000;
+            dist["max_par1"] = 1000;
+            dist["min_par2"] = 1;
+            dist["max_par2"] = 1000;
+            dist["step_par1"] = 0.1;
+            dist["step_par2"] = 0.1;
+
+            dist["par1"] = 40;
+            dist["par2"] = 30;
+
+            dist_name["par1"] = "m";
+            dist_name["par2"] = "\u03C3"; //sigma
+
+            dist_params["norm"] = new(dist);
+            dist_params_names["norm"] = new(dist_name);
+
+            dist.Clear();
+            dist_name.Clear();
+
+            //exp
+            dist["count"] = 1;
+            dist["min_par1"] = 0.1;
+            dist["max_par1"] = 1000;
+            dist["step_par1"] = 0.1;
+            dist["par1"] = 1;
+
+            dist_name["par1"] = "\u03BB"; //lambda
+
+            dist_params["exp"] = new(dist);
+            dist_params_names["exp"] = new(dist_name);
+            
+            dist.Clear();
+            dist_name.Clear();
+
+            //puass
+            dist["count"] = 2;
+            dist["min_par1"] = 0.1;
+            dist["max_par1"] = 1000;
+            dist["step_par1"] = 0.1;
+            dist["min_par2"] = 1;
+            dist["max_par2"] = 1000;
+            dist["step_par2"] = 1;
+            dist["par1"] = 1;
+            dist["par2"] = 30;
+
+            dist_name["par1"] = "\u03BB"; //lambda
+            dist_name["par2"] = "Масштаб";
+
+            dist_params["puass"] = new(dist);
+            dist_params_names["puass"] = new(dist_name);
+
+            dist.Clear();
+            dist_name.Clear();
+
+            //bernoulli
+            dist["count"] = 2;
+            dist["min_par1"] = 0.1;
+            dist["max_par1"] = 0.9;
+            dist["step_par1"] = 0.1;
+            dist["min_par2"] = 1;
+            dist["max_par2"] = 1000;
+            dist["step_par2"] = 1;
+            dist["par1"] = 0.5;
+            dist["par2"] = 30;
+
+            dist_name["par1"] = "p";
+            dist_name["par2"] = "Масштаб";
+
+            dist_params["bernoulli"] = new(dist);
+            dist_params_names["bernoulli"] = new(dist_name);
+
+            dist.Clear();
+            dist_name.Clear();
+
+            //gamma
+            dist["count"] = 2;
+            dist["min_par1"] = 0.1;
+            dist["max_par1"] = 1000;
+            dist["step_par1"] = 0.1;
+            dist["min_par2"] = 0.1;
+            dist["max_par2"] = 1000;
+            dist["step_par2"] = 0.1;
+            dist["par1"] = 1;
+            dist["par2"] = 1;
+
+            dist_name["par1"] = "\u03B1"; //alpha
+            dist_name["par2"] = "\u03B2"; //betta
+
+            dist_params["gamma"] = new(dist);
+            dist_params_names["gamma"] = new(dist_name);
+
+            dist.Clear();
+            dist_name.Clear();
+
+            //pareto
+            dist["count"] = 2;
+            dist["min_par1"] = 0.1;
+            dist["max_par1"] = 1000;
+            dist["step_par1"] = 0.1;
+            dist["min_par2"] = 0.1;
+            dist["max_par2"] = 1000;
+            dist["step_par2"] = 0.1;
+            dist["par1"] = 1;
+            dist["par2"] = 3;
+
+            dist_name["par1"] = "xm";
+            dist_name["par2"] = "\u03B1"; //alpha
+
+            dist_params["pareto"] = new(dist);
+            dist_params_names["pareto"] = new(dist_name);
+
+            dist.Clear();
+            dist_name.Clear();
         }
     }
 }
