@@ -36,3 +36,6 @@ C:\Users\3145t\source\repos\statphys_test\statphys\bin\Debug\net6.0-windows\Scot
 C:\Users\3145t\source\repos\statphys_test\statphys\bin\Debug\net6.0-windows\ScottPlot.WinForms.dll
 C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\statphys.csproj.CopyComplete
 C:\Users\3145t\source\repos\statphys_test\statphys\bin\Debug\net6.0-windows\MathNet.Numerics.dll
+C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\statphys.Form2.resources
+C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\statphys.Properties.Resources.resources
+C:\Users\3145t\source\repos\statphys_test\statphys\obj\Debug\net6.0-windows\statphys.Form3.resources

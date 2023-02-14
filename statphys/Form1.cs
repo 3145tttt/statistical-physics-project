@@ -1,11 +1,14 @@
+using MathNet.Numerics.Distributions;
 using ScottPlot;
 using ScottPlot.Drawing.Colormaps;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Drawing;
 using System.Globalization;
 using System.Numerics;
+using System.Security.Policy;
 using System.Windows.Forms.VisualStyles;
 using static ScottPlot.Plottable.PopulationPlot;
 using static System.Net.Mime.MediaTypeNames;
@@ -21,25 +24,23 @@ namespace statphys
 
         RandomGenerator? gen;
         readonly NumericMethods calc = new();
-        readonly TestingSystem test = new();
         List<double> mean_list = new();
         List<double> var_list = new();
-        List<double> entropy_list = new();
-
-        int prev_height;
-
+        List<double> period_list = new();
 
         string cur_dist = "norm";
 
         Dictionary<string, Dictionary<string, double>> dist_params = new();
         Dictionary<string, Dictionary<string, string>> dist_params_names = new();
 
-        public Form1()
+        Form2 par_;
+
+        public Form1(Form2 parent)
         {
 
             InitializeComponent();
 
-            prev_height = this.Size.Height;
+            par_ = parent;
             /*FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Maximized;*/
 
@@ -48,9 +49,10 @@ namespace statphys
 
             List<string> dist_list = new ();
             dist_list.Add("Нормальное");
-            dist_list.Add("Экспоненциальное");
+            // dist_list.Add("Экспоненциальное");
             dist_list.Add("Гамма");
             dist_list.Add("Парето");
+            dist_list.Add("Вейбулла");
             dist_list.Add("Пуассона");
             dist_list.Add("Бернулли");
             comboBox1.DataSource = dist_list;
@@ -63,9 +65,11 @@ namespace statphys
             Trace.Listeners.Add(new TextWriterTraceListener("debugOut.log"));
             Trace.AutoFlush = true;
 
-            formsPlot1.Plot.Title("Среднее");
-            formsPlot2.Plot.Title("Дисперсия");
-            formsPlot3.Plot.Title("Энтропия");
+            formsPlot1.Plot.Title("Среднее", size: 26);
+            formsPlot2.Plot.Title("Дисперсия", size: 26);
+            formsPlot4.Plot.Title("Распределение", size: 26);
+            formsPlot5.Plot.Title("Периодичность", size: 26);
+
 
         }
 
@@ -115,8 +119,17 @@ namespace statphys
             get_new_sample();
             pictureBox1.Refresh();
             add_mean_var();
-            add_entropy();
-            update_mean_var_labels(mean_list.Last(), var_list.Last());
+            add_period();
+
+            update_labels(
+                points_x.Last(),
+                delta_arr.Last(),
+                mean_list.Last(),
+                var_list.Last(),
+                period_list.Last(),
+                points_x.Count()
+                );
+
             if (delta_arr.Count() > 3)
             {
                 update_plot();
@@ -133,7 +146,7 @@ namespace statphys
                 points_x.RemoveRange(0, C);
                 mean_list.RemoveRange(0, C);
                 var_list.RemoveRange(0, C);
-                entropy_list.RemoveRange(0, C);
+                period_list.RemoveRange(0, C);
             }
         }
 
@@ -144,11 +157,6 @@ namespace statphys
             points_x.Add(cur_x);
             delta_arr.Add(delta);
             update_label(cur_x, delta);
-
-            if (DEBUG)
-            {
-                Trace.WriteLine(delta.ToString(CultureInfo.GetCultureInfo("en-GB")));
-            }
         }
 
         void update_label(double x, double delta)
@@ -160,19 +168,17 @@ namespace statphys
 
         void update_plot()
         {
-            Debug.Print($"{mean_list.Count()}");
             int k = 3;
             if (delta_arr.Count() < k)
             {
                 return;
             }
-            Debug.Print($"{mean_list.Count()}");
             double[] X = Enumerable.Range(1, mean_list.Count()).Select(x => (double)x).Skip(k).ToArray();
             clear_plot();
             
             formsPlot1.Plot.AddScatter(X, mean_list.Skip(k).ToArray());
             formsPlot2.Plot.AddScatter(X, var_list.Skip(k).ToArray());
-            formsPlot3.Plot.AddScatter(X, entropy_list.Skip(k).ToArray());
+            formsPlot5.Plot.AddScatter(X, period_list.Skip(k).ToArray());
 
             refresh_plot();
         }
@@ -181,7 +187,7 @@ namespace statphys
         {
             formsPlot1.Plot.Clear();
             formsPlot2.Plot.Clear();
-            formsPlot3.Plot.Clear();
+            formsPlot5.Plot.Clear();
         }
 
         void refresh_plot()
@@ -189,7 +195,7 @@ namespace statphys
 
             formsPlot1.Refresh();
             formsPlot2.Refresh();
-            formsPlot3.Refresh();
+            formsPlot5.Refresh();
         }
 
         void add_mean_var()
@@ -199,12 +205,12 @@ namespace statphys
             mean_list.Add(mean);
             var_list.Add(var);
         }
-
-        void add_entropy()
-        {
-            entropy_list.Add(calc.get_entropy(delta_arr));
-        }
         
+
+        void add_period()
+        {
+            period_list.Add(1 - var_list.Last() / mean_list.Last() / mean_list.Last());
+        }
         void plot_dist()
         {
             if (delta_arr.Count() <= 1)
@@ -235,14 +241,18 @@ namespace statphys
             formsPlot4.Refresh();
         }
 
-        void update_mean_var_labels(double mean = 0, double var = 0)
-        {            
-            label_mean.Text = $"Среднее = {String.Format("{0:N4}", mean)}";
-            label_var.Text = $"Дисперсия = {String.Format("{0:N4}", var)}";
-            label_count.Text = $"Количество точек = {mean_list.Count()}";
+        void update_labels(double x, double delta, double mean, double var, double period, int count)
+        {
+            label1.Text = $"x = {String.Format("{0:N2}", x)} delta = {String.Format("{0:N2}", delta)}";
+            label_mean.Text = $"Среднее = {String.Format("{0:N2}", mean)}";
+            label_var.Text = $"Дисперсия = {String.Format("{0:N2}", var)}";
+            label_period.Text = $"Периодичность = {String.Format("{0:N2}", period)}";
+            label_count.Text = $"Количество точек = {count}";
 
+            label1.Refresh();
             label_var.Refresh();
             label_mean.Refresh();
+            label_period.Refresh();
             label_count.Refresh();
         }
 
@@ -259,7 +269,7 @@ namespace statphys
             int C = (LINE_DOWN + LINE_UP) / 2;
             int offset = R + 20;
 
-            int POINT_HIEGHT = 10, POINT_WIDTH = 10;
+            int POINT_HIEGHT = 15, POINT_WIDTH = 15;
             e.Graphics.DrawLine(
                 new Pen(Color.Red, 3f),
                 new Point(offset, LINE_UP),
@@ -293,16 +303,20 @@ namespace statphys
             );
 
             // Points
-            SolidBrush commonBrush = new SolidBrush(Color.Orange);
-            SolidBrush lastBrush = new SolidBrush(Color.Blue);
+            SolidBrush brush = new SolidBrush(Color.Blue);
 
             double LINE_WIDTH = pictureBox1.Size.Width - 2*offset;
             double ARC_WIDTH = Math.PI * R / 2;
             for (int i = 0; i < points_x.Count; ++i)
             {
+                if (points_x[i] > 1e9 || points_x[i] < -1e9)
+                {
+                    reset();
+                }
                 int x = Convert.ToInt32(points_x[i]);
-                SolidBrush brush = i == points_x.Count - 1 ? lastBrush : commonBrush;
-                if(x > 2 * LINE_WIDTH + 2 * ARC_WIDTH || x < 0)
+                int points_hieght = i == points_x.Count - 1 ? POINT_HIEGHT + 10 : POINT_HIEGHT;
+                int points_width = i == points_x.Count - 1 ? POINT_WIDTH + 10 : POINT_WIDTH;
+                if (x > 2 * LINE_WIDTH + 2 * ARC_WIDTH || x < 0)
                 {
                     x %= (int)(2 * (LINE_WIDTH + ARC_WIDTH));
                 }
@@ -312,7 +326,7 @@ namespace statphys
                 }
                 if(x >= 0 && x <= LINE_WIDTH)
                 {
-                    e.Graphics.FillEllipse(brush, offset + x, LINE_UP - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                    e.Graphics.FillEllipse(brush, offset + x, LINE_UP - points_hieght / 2, points_width, points_hieght);
                 }
 
                 if (x > LINE_WIDTH && x < LINE_WIDTH  + ARC_WIDTH)
@@ -327,12 +341,12 @@ namespace statphys
                     int p_x = (int)(c_x + t_x);
                     int p_y = (int)(c_y + t_y);
 
-                    e.Graphics.FillEllipse(brush, p_x - 4, p_y - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                    e.Graphics.FillEllipse(brush, p_x - 4, p_y - points_hieght / 2, points_width, points_hieght);
                 }
                 if (x >= LINE_WIDTH + ARC_WIDTH && x <= 2*LINE_WIDTH + ARC_WIDTH)
                 {
                     double t = pictureBox1.Size.Width - offset - (x - LINE_WIDTH - ARC_WIDTH);
-                    e.Graphics.FillEllipse(brush, (int) t, LINE_DOWN - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                    e.Graphics.FillEllipse(brush, (int) t, LINE_DOWN - points_hieght / 2, points_width, points_hieght);
                 }
                 if (x > 2 * LINE_WIDTH + ARC_WIDTH && x <= 2 * (LINE_WIDTH + ARC_WIDTH))
                 {
@@ -345,7 +359,7 @@ namespace statphys
 
                     int p_x = (int)(c_x + t_x);
                     int p_y = (int)(c_y + t_y);
-                    e.Graphics.FillEllipse(brush, p_x - 4, p_y - POINT_HIEGHT / 2, POINT_WIDTH, POINT_HIEGHT);
+                    e.Graphics.FillEllipse(brush, p_x - 4, p_y - points_hieght / 2, points_width, points_hieght);
                 }
             }
         }
@@ -362,16 +376,15 @@ namespace statphys
             timer1.Stop();
             points_x = new List<double> { 0 };
             delta_arr = new List<double> { };
-            entropy_list = new List<double> { };
+            period_list = new List<double> { };
             mean_list = new(); 
             var_list = new();
 
             
             gen = new RandomGenerator(cur_dist, par1, par2);
 
-            update_label(0, 0);
+            update_labels(0, 0, 0, 0, 0, 0);
             pictureBox1.Refresh();
-            update_mean_var_labels();
             clear_plot();
             refresh_plot();
 
@@ -392,7 +405,7 @@ namespace statphys
             numericUpDownMean.Maximum = (decimal)dist["max_par1"];
             numericUpDownMean.Minimum = (decimal)dist["min_par1"];
             numericUpDownMean.ThousandsSeparator = true;
-            numericUpDownMean.DecimalPlaces = 1;
+            numericUpDownMean.DecimalPlaces = (int)dist["DecimalPlaces1"];
             numericUpDownMean.Increment = (decimal)dist["step_par1"];
             numericUpDownMean.Value = (decimal)dist["par1"];
 
@@ -402,7 +415,7 @@ namespace statphys
                 numericUpDownVar.Maximum = (decimal)dist["max_par2"];
                 numericUpDownVar.Minimum = (decimal)dist["min_par2"];
                 numericUpDownVar.ThousandsSeparator = true;
-                numericUpDownVar.DecimalPlaces = 1;
+                numericUpDownVar.DecimalPlaces = (int)dist["DecimalPlaces2"];
                 numericUpDownVar.Increment = (decimal)dist["step_par2"];
                 numericUpDownVar.Value = (decimal)dist["par2"];
             }
@@ -420,7 +433,7 @@ namespace statphys
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             int id = comboBox1.SelectedIndex;
-            List<string> hash_name = new() { "norm", "exp", "gamma", "pareto", "puass", "bernoulli" };
+            List<string> hash_name = new() { "norm", "gamma", "pareto", "weibull", "puass", "bernoulli" };
             cur_dist = hash_name[id];
             set_NumericUpDown();
             reset();
@@ -428,15 +441,20 @@ namespace statphys
 
         private void button2_Click(object sender, EventArgs e)
         {
-            this.Close();
+            reset();
+            par_.Show();
+            Hide();
         }
 
         private void Form1_Resize(object sender, EventArgs e)
         {
             pictureBox1.Refresh();
-            int curHeigh = this.Size.Height;
+            
+        }
 
-            formsPlot1.Height *= curHeigh / prev_height;
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            par_.Close();
         }
 
         void init_dict()
@@ -451,6 +469,8 @@ namespace statphys
             dist["max_par2"] = 1000;
             dist["step_par1"] = 0.1;
             dist["step_par2"] = 0.1;
+            dist["DecimalPlaces1"] = 1;
+            dist["DecimalPlaces2"] = 1;
 
             dist["par1"] = 40;
             dist["par2"] = 30;
@@ -470,6 +490,7 @@ namespace statphys
             dist["max_par1"] = 1000;
             dist["step_par1"] = 0.1;
             dist["par1"] = 1;
+            dist["DecimalPlaces1"] = 1;
 
             dist_name["par1"] = "\u03BB"; //lambda
 
@@ -489,6 +510,8 @@ namespace statphys
             dist["step_par2"] = 1;
             dist["par1"] = 1;
             dist["par2"] = 30;
+            dist["DecimalPlaces1"] = 1;
+            dist["DecimalPlaces2"] = 1;
 
             dist_name["par1"] = "\u03BB"; //lambda
             dist_name["par2"] = "Масштаб";
@@ -509,6 +532,8 @@ namespace statphys
             dist["step_par2"] = 1;
             dist["par1"] = 0.5;
             dist["par2"] = 30;
+            dist["DecimalPlaces1"] = 1;
+            dist["DecimalPlaces2"] = 1;
 
             dist_name["par1"] = "p";
             dist_name["par2"] = "Масштаб";
@@ -521,17 +546,19 @@ namespace statphys
 
             //gamma
             dist["count"] = 2;
-            dist["min_par1"] = 0.1;
+            dist["min_par1"] = 0.01;
             dist["max_par1"] = 1000;
-            dist["step_par1"] = 0.1;
-            dist["min_par2"] = 0.1;
+            dist["step_par1"] = 0.01;
+            dist["min_par2"] = 0.01;
             dist["max_par2"] = 1000;
-            dist["step_par2"] = 0.1;
+            dist["step_par2"] = 0.01;
             dist["par1"] = 1;
             dist["par2"] = 1;
+            dist["DecimalPlaces1"] = 2;
+            dist["DecimalPlaces2"] = 2;
 
-            dist_name["par1"] = "\u03B1"; //alpha
-            dist_name["par2"] = "\u03B2"; //betta
+            dist_name["par1"] = "k";
+            dist_name["par2"] = "\u03B8"; //theta
 
             dist_params["gamma"] = new(dist);
             dist_params_names["gamma"] = new(dist_name);
@@ -544,17 +571,41 @@ namespace statphys
             dist["min_par1"] = 0.1;
             dist["max_par1"] = 1000;
             dist["step_par1"] = 0.1;
-            dist["min_par2"] = 0.1;
+            dist["min_par2"] = 1;
             dist["max_par2"] = 1000;
             dist["step_par2"] = 0.1;
-            dist["par1"] = 1;
+            dist["par1"] = 30;
             dist["par2"] = 3;
+            dist["DecimalPlaces1"] = 1;
+            dist["DecimalPlaces2"] = 1;
 
             dist_name["par1"] = "xm";
             dist_name["par2"] = "\u03B1"; //alpha
 
             dist_params["pareto"] = new(dist);
             dist_params_names["pareto"] = new(dist_name);
+
+            dist.Clear();
+            dist_name.Clear();
+
+            //weibull
+            dist["count"] = 2;
+            dist["min_par1"] = 0.1;
+            dist["max_par1"] = 1000;
+            dist["step_par1"] = 0.1;
+            dist["min_par2"] = 0.1;
+            dist["max_par2"] = 1000;
+            dist["step_par2"] = 0.1;
+            dist["par1"] = 1;
+            dist["par2"] = 3;
+            dist["DecimalPlaces1"] = 1;
+            dist["DecimalPlaces2"] = 1;
+
+            dist_name["par1"] = "k";
+            dist_name["par2"] = "\u03BB"; //lambda
+
+            dist_params["weibull"] = new(dist);
+            dist_params_names["weibull"] = new(dist_name);
 
             dist.Clear();
             dist_name.Clear();

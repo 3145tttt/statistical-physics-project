@@ -1,3 +1,4 @@
+using MathNet.Numerics;
 using MathNet.Numerics.Distributions;
 using ScottPlot.MarkerShapes;
 using System.Diagnostics;
@@ -9,7 +10,7 @@ namespace statphys
     // Sample from custom distrubition
     class RandomGenerator
     {
-        Random rnd;
+        Random? rnd;
         double _par1, _par2;
 
         string _cur_dist;
@@ -31,14 +32,6 @@ namespace statphys
             {
                 return sample_delta_discret(n, eps);
             }
-            /*double val = rnd.NextDouble();
-            double m = get_moment1(), std = Math.Sqrt(get_moment2());
-            double a = m - 100 * std,  b = m + 100 * std;
-            Func<double, double> cdf = get_cdf();
-            double delta = calc.find_root(cdf, val, a, b, eps, n);
-            
-            double res = cdf(delta);
-            Debug.Assert(Math.Abs(val - res) < 0.001);*/
             if (_cur_dist == "norm")
             {
                 return Normal.Sample(rnd, _par1, _par2);
@@ -49,11 +42,15 @@ namespace statphys
             }
             else if (_cur_dist == "gamma")
             {
-                return Gamma.Sample(rnd, _par1, _par2);
+                return Gamma.Sample(rnd, _par1, 1/_par2);
             }
             else if (_cur_dist == "pareto")
             {
                 return Pareto.Sample(rnd, _par1, _par2);
+            }
+            else if (_cur_dist == "weibull")
+            {
+                return Weibull.Sample(_par1, _par2);
             }
 
             return 0;
@@ -91,7 +88,7 @@ namespace statphys
             } 
             else if (_cur_dist == "gamma")
             {
-                return _par1 / _par2;
+                return _par1 * _par2;
             }
             else if (_cur_dist == "pareto")
             {
@@ -100,6 +97,10 @@ namespace statphys
                     return _par1 * _par2 / (_par2 - 1);
                 }
                 return 1000;
+            }
+            else if (_cur_dist == "weibull")
+            {
+                return _par2 * SpecialFunctions.Gamma(1 + 1 / _par1);
             }
             Debug.Print("Error\n");
             return 0;
@@ -125,7 +126,7 @@ namespace statphys
             }
             else if (_cur_dist == "gamma")
             {
-                return _par1 / _par2 / _par2;
+                return _par1 * _par2 * _par2;
             }
             else if (_cur_dist == "pareto")
             {
@@ -134,6 +135,11 @@ namespace statphys
                     return _par1 * _par1 * _par2 / ((_par2 - 1) * (_par2 - 1) * ((_par2 - 2)));
                 }
                 return 1000;
+            }
+            else if (_cur_dist == "weibull")
+            {
+                double mu = get_moment1();
+                return _par2 * _par2 * SpecialFunctions.Gamma(1 + 2 / _par1) - mu*mu;
             }
             Debug.Print("Error\n");
             return 0;

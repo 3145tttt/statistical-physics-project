@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "p9Uceu8R8R3yno3oYLY3aVZCx5OgoObUs1K4lsg2d43K/rc7IVQ56xPZTv45ep9oRAXwuAAg17GKlqWncpdqQA==",
+  "dgSpecHash": "3AnT6XpI7OpV9RmMhsx0E9sGpl6nNNWdRShtgdxI3KgmNyT5rt56cmAinvbiBUMyyXYtTzxej7F0kkjua7Qm8w==",
   "success": true,
   "projectFilePath": "C:\\Users\\3145t\\source\\repos\\statphys_test\\statphys\\statphys.csproj",
   "expectedPackageFiles": [
@@ -10,7 +10,11 @@
     "C:\\Users\\3145t\\.nuget\\packages\\scottplot\\4.1.58\\scottplot.4.1.58.nupkg.sha512",
     "C:\\Users\\3145t\\.nuget\\packages\\scottplot.winforms\\4.1.58\\scottplot.winforms.4.1.58.nupkg.sha512",
     "C:\\Users\\3145t\\.nuget\\packages\\system.drawing.common\\4.6.1\\system.drawing.common.4.6.1.nupkg.sha512",
-    "C:\\Users\\3145t\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512"
+    "C:\\Users\\3145t\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\6.0.11\\microsoft.netcore.app.crossgen2.win-x64.6.0.11.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\6.0.11\\microsoft.aspnetcore.app.runtime.win-x64.6.0.11.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\6.0.11\\microsoft.windowsdesktop.app.runtime.win-x64.6.0.11.nupkg.sha512",
+    "C:\\Users\\3145t\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\6.0.11\\microsoft.netcore.app.runtime.win-x64.6.0.11.nupkg.sha512"
   ],
   "logs": []
 }
